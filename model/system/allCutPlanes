@@ -1,0 +1,314 @@
+/*--------------------------------*- C++ -*----------------------------------*  =========                 |
+  \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \    /   O peration     | Website:  https://openfoam.org
+    \  /    A nd           | Version:  14
+     \/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+
+type            surfaces;
+libs            ("libsampling.so");
+writeControl    writeTime;
+surfaceFormat   vtk;
+fields          (U age p k);
+interpolationScheme cellPoint;
+
+surfaces
+(
+    z_0_20
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.20);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_30
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.30);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_40
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.40);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_50
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.50);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_60
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.60);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_70
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.70);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_80
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.80);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_0_90
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 0.90);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_00
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.00);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_10
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.10);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_20
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.20);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_30
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.30);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_40
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.40);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_50
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.50);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_60
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.60);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_70
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.70);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_80
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.80);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_1_90
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 1.90);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_00
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.00);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_10
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.10);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_20
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.20);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_30
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.30);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_40
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.40);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_50
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.50);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_60
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.60);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_70
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.70);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+    z_2_80
+    {
+        type        cuttingPlane;
+        planeType   pointAndNormal;
+        pointAndNormalDict
+        {
+            point   (4.8 3.1 2.80);
+            normal  (0 0 1);
+        }
+        interpolate true;
+    }
+);

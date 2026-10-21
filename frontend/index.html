@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpenFOAM // Natural Ventilation 3D Lab</title>
+  
+  <!-- Local Three.js & Controls (100% Offline Capable) -->
+  <script src="lib/three.min.js"></script>
+  <script src="lib/OrbitControls.js"></script>
+  <script src="lib/VTKLoader.js"></script>
+  
+  <!-- Pre-loaded Multi-Room CFD Dataset with 27 Native OpenFOAM Cut Planes -->
+  <script src="data.js"></script>
+
+  <style>
+    /* ==========================================================================
+       WHITE MINIMALISTIC BOXY THEME (Swiss / Bauhaus / Architectural Engineering)
+       Comfortably scaled typography & controls for 100% standard display zoom
+       ========================================================================== */
+    :root {
+      --bg-canvas: #ffffff;
+      --bg-panel: #ffffff;
+      --bg-card: #f9f9fb;
+      --border-dark: #111111;
+      --border-light: #e2e2e6;
+      --text-main: #111111;
+      --text-muted: #5e5e62;
+      --accent: #000000;
+      --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --header-height: 56px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      accent-color: var(--accent);
+    }
+
+    /* TOP HEADER BAR */
+    header {
+      height: var(--header-height);
+      border-bottom: 2px solid var(--border-dark);
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      flex-shrink: 0;
+      white-space: nowrap;
+      gap: 14px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      white-space: nowrap;
+    }
+
+    .btn-menu-toggle {
+      display: none;
+      background: #000;
+      color: #fff;
+      border: 1px solid var(--border-dark);
+      padding: 7px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .brand {
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .brand-pill {
+      background: #000;
+      color: #fff;
+      padding: 3px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .kpi-badge {
+      border: 1px solid var(--border-dark);
+      padding: 5px 10px;
+      background: var(--bg-card);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    .camera-presets {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .btn-preset {
+      background: #fff;
+      border: 1px solid var(--border-dark);
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      white-space: nowrap;
+      transition: background 0.1s ease, color 0.1s ease;
+      border-radius: 0;
+    }
+
+    .btn-preset:hover {
+      background: #000;
+      color: #fff;
+    }
+
+    .btn-preset.primary {
+      background: #000;
+      color: #fff;
+    }
+
+    .btn-preset.active {
+      background: #000;
+      color: #fff;
+    }
+
+    #presetsGrid .btn-preset {
+      padding: 6px 3px;
+      font-size: 10px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .axis-control-card {
+      border: 1px solid var(--border-dark);
+      padding: 10px;
+      background: #fafafc;
+      margin-top: 8px;
+    }
+
+    .axis-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .axis-card-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+    }
+
+    .axis-badge-pill {
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 1px 6px;
+      background: #000;
+      color: #fff;
+    }
+
+    .axis-control-card .btn-preset {
+      padding: 5px 3px;
+      font-size: 9.5px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* MAIN APP BODY */
+    .app-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      height: calc(100vh - var(--header-height));
+    }
+
+    /* MOBILE BACKDROP OVERLAY */
+    .sidebar-backdrop {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 45;
+    }
+
+    /* SIDEBAR CONTROLS */
+    aside {
+      width: 380px;
+      height: 100%;
+      border-right: 2px solid var(--border-dark);
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 50;
+      flex-shrink: 0;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.2s ease;
+    }
+
+    .mobile-sidebar-header {
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      border-bottom: 2px solid var(--border-dark);
+      background: #f4f4f6;
+    }
+
+    .panel-section {
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 20px;
+    }
+
+    .section-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title::after {
+      content: "";
+      flex: 1;
+      height: 1.5px;
+      background: var(--border-light);
+      margin-left: 12px;
+    }
+
+    /* FORM CONTROLS */
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-field {
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      color: var(--text-main);
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      transition: all 0.1s ease;
+      border-radius: 0;
+    }
+
+    .btn-field .field-name {
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+
+    .btn-field .field-unit {
+      color: var(--text-muted);
+      font-size: 10.5px;
+    }
+
+    .btn-field.active {
+      background: #000;
+      color: #fff;
+    }
+
+    .btn-field.active .field-unit {
+      color: #bbb;
+    }
+
+    .control-row {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 11.5px;
+    }
+
+    /* CUSTOM BOXY SLIDERS (Easier to grab & view at 100% zoom) */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: var(--border-light);
+      border: 1px solid var(--border-dark);
+      outline: none;
+      border-radius: 0;
+      cursor: pointer;
+      margin: 6px 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #111111;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #111111;
+      cursor: pointer;
+      border-radius: 0;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: #111111;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #111111;
+      cursor: pointer;
+      border-radius: 0;
+    }
+
+    .select-boxy {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--border-dark);
+      background: #fff;
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      border-radius: 0;
+      cursor: pointer;
+    }
+
+    .toggle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .toggle-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--border-dark);
+      border-radius: 0;
+      cursor: pointer;
+    }
+
+    /* 3D VIEWPORT */
+    #viewport-container {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      background: #fbfbfd;
+      overflow: hidden;
+    }
+
+    #webgl-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    /* COLORBAR LEGEND (ParaView Style - Scaled) */
+    .legend-overlay {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      border: 1px solid var(--border-dark);
+      background: rgba(255, 255, 255, 0.97);
+      padding: 14px 18px;
+      width: 330px;
+      box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+      z-index: 30;
+      pointer-events: auto;
+    }
+
+    .legend-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .legend-field-title {
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .legend-bar-container {
+      height: 18px;
+      border: 1px solid var(--border-dark);
+      position: relative;
+      margin-bottom: 6px;
+    }
+
+    .legend-bar {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .legend-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* PROBE TOOLTIP INSPECTOR (Scaled) */
+    .probe-card {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      border: 1px solid var(--border-dark);
+      background: rgba(255, 255, 255, 0.97);
+      padding: 14px 18px;
+      width: 300px;
+      box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.08);
+      z-index: 30;
+      pointer-events: auto;
+    }
+
+    .probe-header {
+      font-size: 11.5px;
+      font-weight: 800;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      letter-spacing: 0.4px;
+    }
+
+    .probe-close-btn {
+      display: none;
+      background: none;
+      border: none;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-main);
+      padding: 0 4px;
+    }
+
+    .probe-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11.5px;
+    }
+
+    .probe-val {
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    /* ==========================================================================
+       RESPONSIVE DESIGN (Media Queries for Large, Medium, and Mobile)
+       ========================================================================== */
+    @media (max-width: 1180px) {
+      aside {
+        width: 340px;
+      }
+      .kpi-badge {
+        padding: 4px 8px;
+        font-size: 10.5px;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .btn-menu-toggle {
+        display: block;
+      }
+
+      .mobile-sidebar-header {
+        display: flex;
+      }
+
+      aside {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 350px;
+        max-width: 86vw;
+        z-index: 50;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.22);
+        transform: translateX(-100%);
+      }
+
+      aside.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-backdrop.open {
+        display: block;
+      }
+
+      .kpi-group {
+        display: none; /* Keep top bar clean on smaller screens */
+      }
+
+      .legend-overlay {
+        bottom: 16px;
+        left: 16px;
+        width: 290px;
+        padding: 12px 14px;
+      }
+
+      .probe-card {
+        top: 16px;
+        right: 16px;
+        width: 270px;
+        padding: 12px 14px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      header {
+        height: 48px;
+        padding: 0 12px;
+      }
+
+      .brand {
+        font-size: 12px;
+      }
+
+      .camera-presets .btn-preset:not(.primary):not(:last-child) {
+        display: none; /* Keep primary ParaView button and reset on very narrow phones */
+      }
+
+      .probe-close-btn {
+        display: inline-block;
+      }
+
+      .probe-card {
+        display: none; /* Hide probe card by default on phones to keep 3D view clear */
+      }
+
+      .probe-card.active-mobile {
+        display: block;
+        top: auto;
+        bottom: 96px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+      }
+
+      .legend-overlay {
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        width: auto;
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header>
+    <div class="header-left">
+      <button class="btn-menu-toggle" id="btnMenuToggle" onclick="toggleSidebarDrawer()">☰ Controls</button>
+      <div class="brand">
+        <span class="brand-pill">CFD</span>
+        OpenFOAM // Natural Ventilation 3D Lab
+      </div>
+      <div class="kpi-group">
+        <div class="kpi-badge" id="kpiNormalBadge">NORMAL: (0, 0, 1) [Z-PLANE]</div>
+        <div class="kpi-badge">AIR FLOW: 4.54 m³/s</div>
+        <div class="kpi-badge">ACH: 109 h⁻¹</div>
+      </div>
+    </div>
+    
+    <div class="camera-presets">
+      <button class="btn-preset primary" onclick="setParaViewPlanSlice()">ParaView Slice (0,0,1)</button>
+      <button class="btn-preset" onclick="setCameraView('iso')">3D Iso</button>
+      <button class="btn-preset" onclick="setCameraView('top')">Plan (Z)</button>
+      <button class="btn-preset" onclick="setCameraView('west')">Side (X)</button>
+      <button class="btn-preset" onclick="setCameraView('south')">Front (Y)</button>
+      <button class="btn-preset" onclick="resetView()">Reset</button>
+    </div>
+  </header>
+
+  <!-- WORKSPACE -->
+  <div class="app-body">
+    <!-- MOBILE BACKDROP OVERLAY -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebarDrawer(false)"></div>
+    
+    <!-- LEFT CONTROL SIDEBAR -->
+    <aside id="appSidebar">
+      <!-- MOBILE DRAWER CLOSE HEADER -->
+      <div class="mobile-sidebar-header">
+        <span style="font-weight: 800; font-size: 12px; text-transform: uppercase;">Simulation Controls</span>
+        <button class="btn-preset" onclick="toggleSidebarDrawer(false)" style="padding: 4px 10px;">✕ Close</button>
+      </div>
+
+      <!-- SECTION 1: FIELD SELECTION -->
+      <div class="panel-section">
+        <div class="section-title">Scalar Output Field</div>
+        <div class="field-grid">
+          <button class="btn-field active" id="btn_U_mag" onclick="selectField('U_mag')">
+            <span class="field-name">Velocity (U)</span>
+            <span class="field-unit">0.0 – 1.71 m/s</span>
+          </button>
+          <button class="btn-field" id="btn_age" onclick="selectField('age')">
+            <span class="field-name">Age of Air (τ)</span>
+            <span class="field-unit">0.0 – 76.3 s</span>
+          </button>
+          <button class="btn-field" id="btn_p" onclick="selectField('p')">
+            <span class="field-name">Pressure (p)</span>
+            <span class="field-unit">-0.46 – 3.33 m²/s²</span>
+          </button>
+          <button class="btn-field" id="btn_k" onclick="selectField('k')">
+            <span class="field-name">Turbulence (k)</span>
+            <span class="field-unit">0.001 – 0.28 m²/s²</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 2: SLICING MODES -->
+      <div class="panel-section">
+        <div class="section-title">ParaView Slice Planes (Multi-Select)</div>
+
+        <!-- MULTI-AXIS TOGGLES -->
+        <div class="control-row">
+          <div class="control-header">
+            <span>Cut Planes</span>
+            <span id="activeAxesCount" style="font-weight: 800;">1 Active</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+            <button class="btn-preset active" id="btnToggleZ" onclick="toggleAxis('Z')" style="padding: 7px 4px; font-size: 11px;">✓ Z (Plan)</button>
+            <button class="btn-preset" id="btnToggleX" onclick="toggleAxis('X')" style="padding: 7px 4px; font-size: 11px;">+ X (Side)</button>
+            <button class="btn-preset" id="btnToggleY" onclick="toggleAxis('Y')" style="padding: 7px 4px; font-size: 11px;">+ Y (Front)</button>
+          </div>
+        </div>
+
+        <!-- RENDER MODE & GLOBAL OPACITY -->
+        <div class="control-row" style="margin-top: 10px;">
+          <label class="control-header">
+            <span>Render Mode</span>
+          </label>
+          <select id="sliceRenderMode" class="select-boxy" onchange="updateSliceRenderMode()">
+            <option value="surface" selected>Smooth Surface (ParaView Slice)</option>
+            <option value="surface_edges">Surface with Edges (CFD Mesh)</option>
+            <option value="points_cloud">Point Cloud Volume</option>
+          </select>
+        </div>
+
+        <div class="control-row" style="margin-top: 10px;">
+          <div class="control-header">
+            <span>Surface Opacity (Cross-Views)</span>
+            <span id="opacityValue" style="font-weight: 800;">100%</span>
+          </div>
+          <input type="range" id="opacitySlider" min="0.15" max="1.0" step="0.05" value="1.0" oninput="updateSurfaceOpacity(this.value)">
+        </div>
+
+        <!-- AXIS CONTROLS CONTAINER -->
+        <div id="axisCardsContainer" style="margin-top: 8px;">
+          <div id="noAxisHint" style="display: none; padding: 16px 12px; border: 1px dashed var(--border-dark); text-align: center; font-size: 11px; color: var(--text-muted); background: #fafafc; line-height: 1.5;">
+            No cut planes selected.<br>Click <strong>Z</strong>, <strong>X</strong>, or <strong>Y</strong> above to show slices.
+          </div>
+          <!-- Z-AXIS CARD -->
+          <div id="controlsCardZ" class="axis-control-card">
+            <div class="axis-card-header">
+              <div class="axis-card-title">
+                <span class="axis-badge-pill">Z</span>
+                <span>PLAN ELEVATION</span>
+              </div>
+              <span id="labelValZ" style="font-weight: 800; font-size: 11px;">1.50 m (Chest)</span>
+            </div>
+            <input type="range" id="sliderZ" min="0.20" max="2.80" step="0.10" value="1.50" oninput="updateAxisPos('Z', this.value)">
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+              <span>0.20m (Floor)</span>
+              <span>1.50m (Chest)</span>
+              <span>2.80m (Ceiling)</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px;">
+              <button class="btn-preset" id="btnZ_090" onclick="setAxisPos('Z', 0.90)">Sill (0.9)</button>
+              <button class="btn-preset active" id="btnZ_150" onclick="setAxisPos('Z', 1.50)">Chest (1.5)</button>
+              <button class="btn-preset" id="btnZ_210" onclick="setAxisPos('Z', 2.10)">Door (2.1)</button>
+              <button class="btn-preset" id="btnZ_030" onclick="setAxisPos('Z', 0.30)">Floor (0.3)</button>
+              <button class="btn-preset" id="btnZ_120" onclick="setAxisPos('Z', 1.20)">Desk (1.2)</button>
+              <button class="btn-preset" id="btnZ_240" onclick="setAxisPos('Z', 2.40)">Vent (2.4)</button>
+            </div>
+          </div>
+
+          <!-- X-AXIS CARD -->
+          <div id="controlsCardX" class="axis-control-card" style="display: none;">
+            <div class="axis-card-header">
+              <div class="axis-card-title">
+                <span class="axis-badge-pill">X</span>
+                <span>LONGITUDINAL</span>
+              </div>
+              <span id="labelValX" style="font-weight: 800; font-size: 11px;">4.80 m (Corr)</span>
+            </div>
+            <input type="range" id="sliderX" min="0.40" max="9.20" step="0.20" value="4.80" oninput="updateAxisPos('X', this.value)">
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+              <span>0.40m (Inlet)</span>
+              <span>4.80m (Corr)</span>
+              <span>9.20m (Outlet)</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px;">
+              <button class="btn-preset" id="btnX_100" onclick="setAxisPos('X', 1.00)">Inlet (1.0)</button>
+              <button class="btn-preset" id="btnX_200" onclick="setAxisPos('X', 2.00)">Office (2.0)</button>
+              <button class="btn-preset" id="btnX_400" onclick="setAxisPos('X', 4.00)">Doors (4.0)</button>
+              <button class="btn-preset active" id="btnX_480" onclick="setAxisPos('X', 4.80)">Corr (4.8)</button>
+              <button class="btn-preset" id="btnX_560" onclick="setAxisPos('X', 5.60)">Arch (5.6)</button>
+              <button class="btn-preset" id="btnX_760" onclick="setAxisPos('X', 7.60)">Meet (7.6)</button>
+            </div>
+          </div>
+
+          <!-- Y-AXIS CARD -->
+          <div id="controlsCardY" class="axis-control-card" style="display: none;">
+            <div class="axis-card-header">
+              <div class="axis-card-title">
+                <span class="axis-badge-pill">Y</span>
+                <span>TRANSVERSE</span>
+              </div>
+              <span id="labelValY" style="font-weight: 800; font-size: 11px;">1.60 m (Jet 1)</span>
+            </div>
+            <input type="range" id="sliderY" min="0.40" max="5.80" step="0.20" value="1.60" oninput="updateAxisPos('Y', this.value)">
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+              <span>0.40m (South)</span>
+              <span>3.10m (Corr)</span>
+              <span>5.80m (North)</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px;">
+              <button class="btn-preset active" id="btnY_160" onclick="setAxisPos('Y', 1.60)">Jet 1 (1.6)</button>
+              <button class="btn-preset" id="btnY_220" onclick="setAxisPos('Y', 2.20)">Off A (2.2)</button>
+              <button class="btn-preset" id="btnY_320" onclick="setAxisPos('Y', 3.20)">Corr (3.2)</button>
+              <button class="btn-preset" id="btnY_420" onclick="setAxisPos('Y', 4.20)">Off B (4.2)</button>
+              <button class="btn-preset" id="btnY_480" onclick="setAxisPos('Y', 4.80)">Jet 2 (4.8)</button>
+              <button class="btn-preset" id="btnY_540" onclick="setAxisPos('Y', 5.40)">North (5.4)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: PARAVIEW COLORMAP PALETTES -->
+      <div class="panel-section">
+        <div class="section-title">ParaView Colormap</div>
+        <select id="paletteSelect" class="select-boxy" onchange="updatePalette()">
+          <option value="coolwarm" selected>ParaView Default: Cool to Warm</option>
+          <option value="rainbow">ParaView Classic: Blue to Red Rainbow</option>
+          <option value="turbo">ParaView Turbo (Scientific HDR)</option>
+          <option value="viridis">ParaView Viridis (Uniform)</option>
+        </select>
+      </div>
+
+      <!-- SECTION 4: 3D GEOMETRY OPTIONS -->
+      <div class="panel-section">
+        <div class="section-title">Building Visuals</div>
+        <div class="toggle-list">
+          <label class="toggle-item">
+            <input type="checkbox" id="chkWalls" checked onchange="toggleWalls()">
+            <span>Building Walls (Translucent Shell)</span>
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="chkWallEdges" checked onchange="toggleWallEdges()">
+            <span>Wall Edge Wireframe</span>
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="chkStreamlines" checked onchange="toggleStreamlines()">
+            <span>3D Airflow Streamline Ribbons</span>
+          </label>
+          <label class="toggle-item">
+            <input type="checkbox" id="chkLabels" checked onchange="toggleLabels()">
+            <span>Room & Opening 3D Badges</span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER 3D VIEWPORT -->
+    <main id="viewport-container">
+      <canvas id="webgl-canvas"></canvas>
+
+      <!-- COLORBAR OVERLAY (ParaView Style) -->
+      <div class="legend-overlay">
+        <div class="legend-title-row">
+          <span class="legend-field-title" id="legendTitle">Velocity Magnitude</span>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: 700;" id="legendUnit">m/s</span>
+        </div>
+        <div class="legend-bar-container">
+          <canvas id="legendCanvas" class="legend-bar"></canvas>
+        </div>
+        <div class="legend-ticks">
+          <span id="legendMin">0.00</span>
+          <span id="legendMid">0.86</span>
+          <span id="legendMax">1.71</span>
+        </div>
+      </div>
+
+      <!-- 3D PROBE CARD -->
+      <div class="probe-card" id="probeCard">
+        <div class="probe-header">
+          <span>PROBE POINT INSPECTOR</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="color: #00aa33; font-weight: 800;">● ACTIVE</span>
+            <button class="probe-close-btn" onclick="toggleProbeCard(false)">✕</button>
+          </div>
+        </div>
+        <div class="probe-row">
+          <span style="color: var(--text-muted);">Coordinates (X,Y,Z):</span>
+          <span class="probe-val" id="probeCoord">Click or hover slice</span>
+        </div>
+        <div class="probe-row">
+          <span style="color: var(--text-muted);">Current Room:</span>
+          <span class="probe-val" id="probeRoom">-</span>
+        </div>
+        <div class="probe-row">
+          <span style="color: var(--text-muted);">Velocity Magnitude:</span>
+          <span class="probe-val" id="probeVel">-</span>
+        </div>
+        <div class="probe-row">
+          <span style="color: var(--text-muted);">Local Age of Air:</span>
+          <span class="probe-val" id="probeAge">-</span>
+        </div>
+        <div class="probe-row">
+          <span style="color: var(--text-muted);">Draft Comfort:</span>
+          <span class="probe-val" id="probeDraft">-</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       THREE.JS INITIALIZATION & SCENE SETUP
+       ========================================================================== */
+    let scene, camera, renderer, controls;
+    let sliceGroup, sliceWireGroup, cfdPointsMesh;
+    let wallsMesh, wallLinesMesh;
+    let streamlineGroup, labelGroup;
+    let currentField = 'U_mag';
+    let currentPalette = 'coolwarm'; // Kenneth Moreland ParaView Default
+    let currentSliceRenderMode = 'surface';
+    let currentSliceOpacity = 1.0;
+
+    // Simultaneous multi-axis slicing state
+    let activeAxes = {
+      Z: true,
+      X: false,
+      Y: false
+    };
+
+    let axisValues = {
+      Z: 1.50,
+      X: 4.80,
+      Y: 1.60
+    };
+    
+    const data = window.BUILDING_CFD_DATA;
+
+    /* ==========================================================================
+       MULTI-AXIS CONFIGURATION (Z = Elevation, X = Longitudinal, Y = Transverse)
+       ========================================================================== */
+    const AXIS_CONFIG = {
+      Z: {
+        normalBadge: 'NORMAL: (0, 0, 1) [Z-PLAN VIEW]',
+        label: 'Cut Elevation (Z - Plan View)',
+        presetsHeading: 'Elevation Presets (Z)',
+        min: 0.20,
+        max: 2.80,
+        step: 0.10,
+        defaultVal: 1.50,
+        subtext: ['0.20m (Floor)', '1.50m (Chest)', '2.80m (Ceiling)'],
+        presets: [
+          { id: '090', label: 'Sill (0.9m)', val: 0.90 },
+          { id: '150', label: 'Chest (1.5m)', val: 1.50 },
+          { id: '210', label: 'Door (2.1m)', val: 2.10 },
+          { id: '030', label: 'Floor (0.3m)', val: 0.30 },
+          { id: '120', label: 'Desk (1.2m)', val: 1.20 },
+          { id: '240', label: 'Vent (2.4m)', val: 2.40 }
+        ],
+        formatLabel: function(v) {
+          let l = v.toFixed(2) + ' m';
+          if (Math.abs(v - 0.30) < 0.06) l += ' (Floor)';
+          else if (Math.abs(v - 0.90) < 0.06) l += ' (Window Sill)';
+          else if (Math.abs(v - 1.20) < 0.06) l += ' (Desk Level)';
+          else if (Math.abs(v - 1.50) < 0.06) l += ' (Chest / Breathing)';
+          else if (Math.abs(v - 1.80) < 0.06) l += ' (Eye Level)';
+          else if (Math.abs(v - 2.10) < 0.06) l += ' (Door Lintel)';
+          else if (Math.abs(v - 2.40) < 0.06) l += ' (High Vent)';
+          else if (Math.abs(v - 2.80) < 0.06) l += ' (Ceiling)';
+          return l;
+        },
+        cameraAlign: function() {
+          camera.position.set(4.8, 3.1, 15);
+          camera.up.set(0, 1, 0);
+          controls.target.set(4.8, 3.1, 1.5);
+          controls.update();
+        }
+      },
+      X: {
+        normalBadge: 'NORMAL: (1, 0, 0) [X-LONGITUDINAL]',
+        label: 'Cut Position (X - Longitudinal)',
+        presetsHeading: 'Longitudinal Presets (X)',
+        min: 0.40,
+        max: 9.20,
+        step: 0.20,
+        defaultVal: 4.80,
+        subtext: ['0.40m (Inlet Facade)', '4.80m (Corridor)', '9.20m (Outlet Facade)'],
+        presets: [
+          { id: '100', label: 'Inlets (1.0m)', val: 1.00 },
+          { id: '200', label: 'Office (2.0m)', val: 2.00 },
+          { id: '400', label: 'Doors (4.0m)', val: 4.00 },
+          { id: '480', label: 'Corr (4.8m)', val: 4.80 },
+          { id: '560', label: 'Arch (5.6m)', val: 5.60 },
+          { id: '760', label: 'Meeting (7.6m)', val: 7.60 }
+        ],
+        formatLabel: function(v) {
+          let l = v.toFixed(2) + ' m';
+          if (Math.abs(v - 1.00) < 0.11) l += ' (Inlet Window Zone)';
+          else if (Math.abs(v - 2.00) < 0.11) l += ' (Office A & B Center)';
+          else if (Math.abs(v - 4.00) < 0.11) l += ' (Partition Doors)';
+          else if (Math.abs(v - 4.80) < 0.11) l += ' (Central Hallway)';
+          else if (Math.abs(v - 5.60) < 0.11) l += ' (Archway to Meeting)';
+          else if (Math.abs(v - 7.60) < 0.11) l += ' (Meeting Space Center)';
+          else if (Math.abs(v - 8.80) < 0.11) l += ' (Near Leeward Exhaust)';
+          return l;
+        },
+        cameraAlign: function() {
+          camera.position.set(-8, 3.1, 1.5);
+          camera.up.set(0, 0, 1);
+          controls.target.set(4.8, 3.1, 1.5);
+          controls.update();
+        }
+      },
+      Y: {
+        normalBadge: 'NORMAL: (0, 1, 0) [Y-TRANSVERSE]',
+        label: 'Cut Position (Y - Transverse)',
+        presetsHeading: 'Transverse Presets (Y)',
+        min: 0.40,
+        max: 5.80,
+        step: 0.20,
+        defaultVal: 1.60,
+        subtext: ['0.40m (South Wall)', '3.10m (Corridor)', '5.80m (North Wall)'],
+        presets: [
+          { id: '160', label: 'Jet 1 (1.6m)', val: 1.60 },
+          { id: '220', label: 'Off A (2.2m)', val: 2.20 },
+          { id: '320', label: 'Corr (3.2m)', val: 3.20 },
+          { id: '420', label: 'Off B (4.2m)', val: 4.20 },
+          { id: '480', label: 'Jet 2 (4.8m)', val: 4.80 },
+          { id: '540', label: 'North (5.4m)', val: 5.40 }
+        ],
+        formatLabel: function(v) {
+          let l = v.toFixed(2) + ' m';
+          if (Math.abs(v - 1.60) < 0.11) l += ' (Jet 1: Win 1 → Door 1)';
+          else if (Math.abs(v - 2.20) < 0.11) l += ' (Office A Circulation)';
+          else if (Math.abs(v - 3.20) < 0.11) l += ' (Corridor & Arch Spine)';
+          else if (Math.abs(v - 4.20) < 0.11) l += ' (Office B Circulation)';
+          else if (Math.abs(v - 4.80) < 0.11) l += ' (Jet 2: Win 2 → Door 2)';
+          else if (Math.abs(v - 5.40) < 0.11) l += ' (North Re-circulation)';
+          return l;
+        },
+        cameraAlign: function() {
+          camera.position.set(4.8, -9, 1.5);
+          camera.up.set(0, 0, 1);
+          controls.target.set(4.8, 3.1, 1.5);
+          controls.update();
+        }
+      }
+    };
+
+    /* ==========================================================================
+       PARAVIEW COLORMAP PALETTES
+       1. Kenneth Moreland's Official ParaView Cool-to-Warm (Diverging Msh/Lab)
+       2. Classic ParaView Blue-to-Red Rainbow (Jet)
+       3. ParaView Turbo (Scientific HDR)
+       4. ParaView Viridis (Perceptually Uniform Sequential)
+       ========================================================================== */
+    const PALETTES = {
+      coolwarm: [
+        [0.000, 0.231, 0.298, 0.753], // ParaView Cool Blue (#3B4CC0)
+        [0.125, 0.341, 0.490, 0.867],
+        [0.250, 0.490, 0.678, 0.941],
+        [0.375, 0.671, 0.816, 0.945],
+        [0.500, 0.867, 0.867, 0.867], // ParaView Neutral Gray (#DDDDDD)
+        [0.625, 0.957, 0.722, 0.627],
+        [0.750, 0.929, 0.494, 0.380],
+        [0.875, 0.835, 0.243, 0.196],
+        [1.000, 0.706, 0.016, 0.149]  // ParaView Warm Red (#B40426)
+      ],
+      rainbow: [
+        [0.0, 0.0, 0.0, 1.0], // Blue
+        [0.25, 0.0, 1.0, 1.0], // Cyan
+        [0.5, 0.0, 1.0, 0.0], // Green
+        [0.75, 1.0, 1.0, 0.0], // Yellow
+        [1.0, 1.0, 0.0, 0.0]  // Red
+      ],
+      viridis: [
+        [0.000, 0.267, 0.004, 0.329],
+        [0.250, 0.192, 0.408, 0.557],
+        [0.500, 0.129, 0.569, 0.549],
+        [0.750, 0.369, 0.784, 0.380],
+        [1.000, 0.992, 0.906, 0.145]
+      ],
+      turbo: [
+        [0.0, 0.188, 0.078, 0.498],
+        [0.2, 0.122, 0.643, 0.898],
+        [0.4, 0.278, 0.910, 0.416],
+        [0.6, 0.922, 0.867, 0.137],
+        [0.8, 0.984, 0.420, 0.078],
+        [1.0, 0.478, 0.016, 0.016]
+      ]
+    };
+
+    function interpolateColor(t, paletteName) {
+      t = Math.max(0, Math.min(1, t));
+      const table = PALETTES[paletteName] || PALETTES.coolwarm;
+      for (let i = 0; i < table.length - 1; i++) {
+        if (t >= table[i][0] && t <= table[i+1][0]) {
+          const f = (t - table[i][0]) / (table[i+1][0] - table[i][0]);
+          return [
+            table[i][1] + f * (table[i+1][1] - table[i][1]),
+            table[i][2] + f * (table[i+1][2] - table[i][2]),
+            table[i][3] + f * (table[i+1][3] - table[i][3])
+          ];
+        }
+      }
+      return table[table.length - 1].slice(1);
+    }
+
+    function init() {
+      const container = document.getElementById('viewport-container');
+      const canvas = document.getElementById('webgl-canvas');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xfcfcfe);
+
+      camera = new THREE.PerspectiveCamera(38, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(15, -13, 12);
+      camera.up.set(0, 0, 1);
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+      controls = new THREE.OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.target.set(4.8, 3.1, 1.5);
+
+      // Technical Architectural Grid
+      const grid = new THREE.GridHelper(16, 32, 0x111111, 0xe8e8ee);
+      grid.rotation.x = Math.PI / 2;
+      grid.position.set(4.8, 3.1, -0.01);
+      scene.add(grid);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.35);
+      dirLight.position.set(10, -10, 20);
+      scene.add(dirLight);
+
+      // Groups
+      sliceGroup = new THREE.Group();
+      sliceWireGroup = new THREE.Group();
+      streamlineGroup = new THREE.Group();
+      labelGroup = new THREE.Group();
+      scene.add(sliceGroup);
+      scene.add(sliceWireGroup);
+      scene.add(streamlineGroup);
+      scene.add(labelGroup);
+
+      // Support direct URL parameters: ?axis=XYZ, ?axis=ZX, ?axis=all, ?posZ=1.50&posX=4.00
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryAxis = urlParams.get('axis');
+      const queryPosZ = urlParams.get('posZ') || urlParams.get('pos');
+      const queryPosX = urlParams.get('posX');
+      const queryPosY = urlParams.get('posY');
+      const queryField = urlParams.get('field');
+
+      if (queryField && ['U_mag', 'age', 'p', 'k'].includes(queryField)) {
+        currentField = queryField;
+        document.querySelectorAll('.btn-field').forEach(b => b.classList.remove('active'));
+        const btnF = document.getElementById('btn_' + queryField);
+        if (btnF) btnF.classList.add('active');
+      }
+
+      if (queryPosZ && !isNaN(parseFloat(queryPosZ))) axisValues.Z = parseFloat(queryPosZ);
+      if (queryPosX && !isNaN(parseFloat(queryPosX))) axisValues.X = parseFloat(queryPosX);
+      if (queryPosY && !isNaN(parseFloat(queryPosY))) axisValues.Y = parseFloat(queryPosY);
+
+      if (queryAxis) {
+        const qUpper = queryAxis.toUpperCase();
+        if (qUpper === 'ALL' || qUpper === 'XYZ') {
+          activeAxes = { Z: true, X: true, Y: true };
+        } else if (qUpper === 'ZX' || qUpper === 'XZ') {
+          activeAxes = { Z: true, X: true, Y: false };
+        } else if (qUpper === 'ZY' || qUpper === 'YZ') {
+          activeAxes = { Z: true, X: false, Y: true };
+        } else if (qUpper === 'XY' || qUpper === 'YX') {
+          activeAxes = { Z: false, X: true, Y: true };
+        } else if (['Z', 'X', 'Y'].includes(qUpper)) {
+          activeAxes = { Z: qUpper === 'Z', X: qUpper === 'X', Y: qUpper === 'Y' };
+        }
+      }
+
+      // Build Visuals
+      buildArchitecturalShell();
+      buildSliceSurfaces();
+      buildStreamlines();
+      buildLabels();
+      updateLegendCanvas();
+      syncAxisUI();
+
+      // Events
+      window.addEventListener('resize', onWindowResize);
+      canvas.addEventListener('mousemove', onMouseMove);
+      canvas.addEventListener('click', onClickProbe);
+      canvas.addEventListener('touchend', onTouchProbe);
+
+      animate();
+    }
+
+    // 1. ARCHITECTURAL WALLS & OPENINGS
+    function buildArchitecturalShell() {
+      const walls = data.geometry.walls;
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(walls.points, 3));
+      geom.setIndex(walls.indices);
+      geom.computeVertexNormals();
+
+      const mat = new THREE.MeshLambertMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide
+      });
+      wallsMesh = new THREE.Mesh(geom, mat);
+      scene.add(wallsMesh);
+
+      const edgeGeom = new THREE.EdgesGeometry(geom, 25);
+      const edgeMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 1 });
+      wallLinesMesh = new THREE.LineSegments(edgeGeom, edgeMat);
+      scene.add(wallLinesMesh);
+
+      addOpeningMesh(data.geometry.inlet1, 0x0077ff);
+      addOpeningMesh(data.geometry.inlet2, 0x0077ff);
+      addOpeningMesh(data.geometry.outlet1, 0xff3311);
+      addOpeningMesh(data.geometry.outlet2, 0xff3311);
+    }
+
+    function addOpeningMesh(poly, color) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(poly.points, 3));
+      g.setIndex(poly.indices);
+      const m = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+      scene.add(new THREE.Mesh(g, m));
+
+      const eg = new THREE.EdgesGeometry(g, 15);
+      scene.add(new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: color })));
+    }
+
+    // 2. PARAVIEW FULL SLICE (NATIVE OPENFOAM CUT PLANES FOR Z, X, AND Y)
+    function getClosestNativeSlice(targetVal, axis) {
+      axis = axis || currentSliceAxis || 'Z';
+      let sliceMap = data.native_slices_z || data.native_slices;
+      if (axis === 'X') sliceMap = data.native_slices_x;
+      else if (axis === 'Y') sliceMap = data.native_slices_y;
+
+      if (!sliceMap) return data.paraview_slice;
+
+      const keys = Object.keys(sliceMap);
+      if (keys.length === 0) return data.paraview_slice;
+
+      let bestKey = keys[0];
+      let minDiff = 1e9;
+      for (const k of keys) {
+        const diff = Math.abs(parseFloat(k) - targetVal);
+        if (diff < minDiff) {
+          minDiff = diff;
+          bestKey = k;
+        }
+      }
+      return sliceMap[bestKey];
+    }
+
+    function buildSliceSurfaces() {
+      // Clear all active slice meshes
+      while (sliceGroup.children.length > 0) {
+        const m = sliceGroup.children[0];
+        sliceGroup.remove(m);
+        if (m.geometry) m.geometry.dispose();
+      }
+      while (sliceWireGroup.children.length > 0) {
+        const m = sliceWireGroup.children[0];
+        sliceWireGroup.remove(m);
+        if (m.geometry) m.geometry.dispose();
+      }
+      if (cfdPointsMesh) {
+        scene.remove(cfdPointsMesh);
+        cfdPointsMesh = null;
+      }
+
+      if (currentSliceRenderMode === 'points_cloud') {
+        buildCfdPoints();
+        updateHeaderNormalBadge();
+        return;
+      }
+
+      let minV = 0, maxV = 1;
+      if (currentField === 'U_mag') { minV = 0.0; maxV = 1.71; }
+      else if (currentField === 'age') { minV = 0.0; maxV = 76.3; }
+      else if (currentField === 'p') { minV = -0.46; maxV = 3.33; }
+      else if (currentField === 'k') { minV = 0.001; maxV = 0.28; }
+      const span = Math.max(1e-6, maxV - minV);
+
+      ['Z', 'X', 'Y'].forEach(axis => {
+        if (!activeAxes[axis]) return;
+
+        const pos = axisValues[axis];
+        const sliceData = getClosestNativeSlice(pos, axis);
+        if (!sliceData || !sliceData.points) return;
+
+        const pts = sliceData.points;
+        const indices = sliceData.indices;
+        const vals = sliceData[currentField] || sliceData['U_mag'];
+
+        const nPts = pts.length / 3;
+        const colors = new Float32Array(nPts * 3);
+        for (let i = 0; i < nPts; i++) {
+          const t = (vals[i] - minV) / span;
+          const rgb = interpolateColor(t, currentPalette);
+          colors[i * 3]     = rgb[0];
+          colors[i * 3 + 1] = rgb[1];
+          colors[i * 3 + 2] = rgb[2];
+        }
+
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geom.setIndex(indices);
+        geom.computeVertexNormals();
+
+        // Solid continuous Gouraud shaded surface with interactive opacity
+        const mat = new THREE.MeshBasicMaterial({
+          vertexColors: true,
+          side: THREE.DoubleSide,
+          transparent: currentSliceOpacity < 0.99,
+          opacity: currentSliceOpacity,
+          depthWrite: currentSliceOpacity > 0.8
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.userData = { axis: axis, pos: pos, sliceData: sliceData };
+        sliceGroup.add(mesh);
+
+        // Optional wireframe mesh overlay
+        if (currentSliceRenderMode === 'surface_edges') {
+          const wireMat = new THREE.LineBasicMaterial({
+            color: 0x111111,
+            transparent: true,
+            opacity: 0.22
+          });
+          const wireGeom = new THREE.WireframeGeometry(geom);
+          const wireMesh = new THREE.LineSegments(wireGeom, wireMat);
+          sliceWireGroup.add(wireMesh);
+        }
+      });
+
+      updateHeaderNormalBadge();
+    }
+
+    // POINT CLOUD FALLBACK
+    function buildCfdPoints() {
+      const pts = data.cfd.points;
+      const n = pts.length / 3;
+      const vals = data.cfd[currentField];
+      const range = data.metadata.ranges[currentField] || [0, 1];
+      const minV = range[0], maxV = range[1];
+      const span = Math.max(1e-6, maxV - minV);
+
+      const filteredIndices = [];
+      const colors = [];
+
+      for (let i = 0; i < n; i++) {
+        const px = pts[i * 3];
+        const py = pts[i * 3 + 1];
+        const pz = pts[i * 3 + 2];
+
+        let match = false;
+        if (activeAxes.Z && Math.abs(pz - axisValues.Z) <= 0.12) match = true;
+        if (activeAxes.X && Math.abs(px - axisValues.X) <= 0.18) match = true;
+        if (activeAxes.Y && Math.abs(py - axisValues.Y) <= 0.18) match = true;
+
+        if (match) {
+          filteredIndices.push(i);
+          const t = (vals[i] - minV) / span;
+          const rgb = interpolateColor(t, currentPalette);
+          colors.push(rgb[0], rgb[1], rgb[2]);
+        }
+      }
+
+      const geom = new THREE.BufferGeometry();
+      const posArray = new Float32Array(filteredIndices.length * 3);
+      for (let k = 0; k < filteredIndices.length; k++) {
+        const idx = filteredIndices[k];
+        posArray[k * 3]     = pts[idx * 3];
+        posArray[k * 3 + 1] = pts[idx * 3 + 1];
+        posArray[k * 3 + 2] = pts[idx * 3 + 2];
+      }
+
+      geom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      cfdPointsMesh = new THREE.Points(geom, new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, opacity: currentSliceOpacity }));
+      scene.add(cfdPointsMesh);
+    }
+
+    // 3. 3D STREAMLINES
+    function buildStreamlines() {
+      streamlineGroup.clear();
+      const paths = [
+        [[0.1, 1.2, 1.4], [1.5, 1.4, 1.5], [3.5, 1.5, 1.3], [4.1, 1.5, 1.1], [4.8, 2.2, 1.2], [5.5, 3.1, 1.3], [7.0, 2.5, 1.5], [9.5, 1.5, 1.7]],
+        [[0.1, 1.8, 1.6], [1.8, 1.9, 1.7], [3.6, 1.7, 1.4], [4.1, 1.6, 1.2], [4.7, 2.8, 1.3], [5.5, 3.2, 1.4], [7.2, 2.0, 1.6], [9.5, 1.7, 1.8]],
+        [[0.1, 4.4, 1.4], [1.5, 4.5, 1.5], [3.5, 4.6, 1.3], [4.1, 4.7, 1.1], [4.8, 4.0, 1.2], [5.5, 3.2, 1.3], [7.0, 4.0, 1.5], [9.5, 4.5, 1.7]],
+        [[0.1, 5.0, 1.6], [1.8, 4.9, 1.7], [3.6, 4.8, 1.4], [4.1, 4.8, 1.2], [4.7, 3.4, 1.3], [5.5, 3.3, 1.4], [7.2, 4.8, 1.6], [9.5, 4.8, 1.8]]
+      ];
+
+      paths.forEach((pts, pIdx) => {
+        const v3 = pts.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+        const curve = new THREE.CatmullRomCurve3(v3);
+        const tubeGeom = new THREE.TubeGeometry(curve, 64, 0.035, 8, false);
+        const tubeMat = new THREE.MeshBasicMaterial({ color: pIdx < 2 ? 0x0077ff : 0x00aaff });
+        streamlineGroup.add(new THREE.Mesh(tubeGeom, tubeMat));
+      });
+    }
+
+    // 4. ARCHITECTURAL LABELS
+    function buildLabels() {
+      labelGroup.clear();
+      data.rooms.forEach(r => {
+        const label = create3DTextSprite(r.name);
+        label.position.set(r.label_pos[0], r.label_pos[1], r.label_pos[2]);
+        labelGroup.add(label);
+      });
+
+      data.openings.forEach(op => {
+        const badge = create3DTextSprite(op.name, true);
+        badge.position.set(op.pos[0], op.pos[1], op.pos[2] + 0.3);
+        labelGroup.add(badge);
+      });
+    }
+
+    function create3DTextSprite(text, isOpening = false) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = isOpening ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.95)';
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.lineWidth = 4; ctx.strokeStyle = '#111111';
+      ctx.strokeRect(0, 0, 256, 64);
+
+      ctx.fillStyle = isOpening ? '#ffffff' : '#111111';
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), depthTest: false }));
+      sprite.scale.set(1.4, 0.35, 1);
+      return sprite;
+    }
+
+    // 5. COLORBAR LEGEND RENDER
+    function updateLegendCanvas() {
+      const cvs = document.getElementById('legendCanvas');
+      const w = 290;
+      cvs.width = w; cvs.height = 18;
+      const ctx = cvs.getContext('2d');
+      for (let x = 0; x < w; x++) {
+        const t = x / w;
+        const rgb = interpolateColor(t, currentPalette);
+        ctx.fillStyle = `rgb(${Math.round(rgb[0]*255)}, ${Math.round(rgb[1]*255)}, ${Math.round(rgb[2]*255)})`;
+        ctx.fillRect(x, 0, 1, 18);
+      }
+
+      let minV = 0, maxV = 1;
+      if (currentField === 'U_mag') { minV = 0.0; maxV = 1.71; }
+      else if (currentField === 'age') { minV = 0.0; maxV = 76.3; }
+      else if (currentField === 'p') { minV = -0.46; maxV = 3.33; }
+      else if (currentField === 'k') { minV = 0.001; maxV = 0.28; }
+
+      document.getElementById('legendMin').innerText = minV.toFixed(2);
+      document.getElementById('legendMid').innerText = ((minV + maxV) / 2).toFixed(2);
+      document.getElementById('legendMax').innerText = maxV.toFixed(2);
+
+      const titles = {
+        'U_mag': ['Velocity Magnitude', 'm/s'],
+        'age': ['Local Mean Age of Air', 'seconds'],
+        'p': ['Kinematic Pressure', 'm²/s²'],
+        'k': ['Turbulence Kinetic Energy', 'm²/s²']
+      };
+      document.getElementById('legendTitle').innerText = titles[currentField][0];
+      document.getElementById('legendUnit').innerText = titles[currentField][1];
+    }
+
+    // UI ACTIONS & MULTI-AXIS INTERACTION
+    function selectField(fieldKey) {
+      currentField = fieldKey;
+      document.querySelectorAll('.btn-field').forEach(b => b.classList.remove('active'));
+      const b = document.getElementById('btn_' + fieldKey);
+      if (b) b.classList.add('active');
+      buildSliceSurfaces();
+      updateLegendCanvas();
+    }
+
+    function updateSliceRenderMode() {
+      currentSliceRenderMode = document.getElementById('sliceRenderMode').value;
+      buildSliceSurfaces();
+    }
+
+    function updateHeaderNormalBadge() {
+      const active = ['Z', 'X', 'Y'].filter(a => activeAxes[a]);
+      const badge = document.getElementById('kpiNormalBadge');
+      if (!badge) return;
+
+      if (active.length === 3) {
+        badge.innerText = `TRI-SLICE: Z(${axisValues.Z.toFixed(2)}m) + X(${axisValues.X.toFixed(2)}m) + Y(${axisValues.Y.toFixed(2)}m)`;
+      } else if (active.length === 2) {
+        badge.innerText = `DUAL SLICE: ${active.map(a => `${a}(${axisValues[a].toFixed(2)}m)`).join(' + ')}`;
+      } else if (active.length === 1) {
+        const a = active[0];
+        const normalStr = a === 'Z' ? '(0, 0, 1)' : a === 'X' ? '(1, 0, 0)' : '(0, 1, 0)';
+        badge.innerText = `NORMAL: ${normalStr} [${a}-PLANE ${axisValues[a].toFixed(2)}m]`;
+      } else {
+        badge.innerText = 'NO ACTIVE SLICE';
+      }
+    }
+
+    function toggleAxis(axis) {
+      activeAxes[axis] = !activeAxes[axis];
+      syncAxisUI();
+      buildSliceSurfaces();
+    }
+
+    function setAxisCombo(axesList) {
+      ['Z', 'X', 'Y'].forEach(a => {
+        activeAxes[a] = axesList.includes(a);
+      });
+      syncAxisUI();
+      buildSliceSurfaces();
+    }
+
+    function syncAxisUI() {
+      ['Z', 'X', 'Y'].forEach(a => {
+        const isActive = activeAxes[a];
+        const btn = document.getElementById('btnToggle' + a);
+        if (btn) {
+          btn.classList.toggle('active', isActive);
+          btn.innerText = (isActive ? '✓ ' : '+ ') + a + (a === 'Z' ? ' (Plan)' : a === 'X' ? ' (Side)' : ' (Front)');
+        }
+        const card = document.getElementById('controlsCard' + a);
+        if (card) {
+          card.style.display = isActive ? 'block' : 'none';
+        }
+        const lbl = document.getElementById('labelVal' + a);
+        if (lbl && AXIS_CONFIG[a]) {
+          lbl.innerText = AXIS_CONFIG[a].formatLabel(axisValues[a]);
+        }
+        const slider = document.getElementById('slider' + a);
+        if (slider) {
+          slider.value = axisValues[a].toFixed(2);
+        }
+        // Update presets for this axis
+        const cfg = AXIS_CONFIG[a];
+        if (cfg && cfg.presets) {
+          cfg.presets.forEach(p => {
+            const b = document.getElementById('btn' + a + '_' + p.id);
+            if (b) {
+              b.classList.toggle('active', Math.abs(axisValues[a] - p.val) < (cfg.step * 0.6));
+            }
+          });
+        }
+      });
+
+      const activeCount = ['Z', 'X', 'Y'].filter(a => activeAxes[a]).length;
+      const countEl = document.getElementById('activeAxesCount');
+      if (countEl) countEl.innerText = activeCount === 0 ? '0 Active (Hidden)' : (activeCount + ' Active');
+
+      const noHint = document.getElementById('noAxisHint');
+      if (noHint) {
+        noHint.style.display = activeCount === 0 ? 'block' : 'none';
+      }
+    }
+
+    function updateAxisPos(axis, val) {
+      axisValues[axis] = parseFloat(val);
+      const lbl = document.getElementById('labelVal' + axis);
+      if (lbl && AXIS_CONFIG[axis]) {
+        lbl.innerText = AXIS_CONFIG[axis].formatLabel(axisValues[axis]);
+      }
+      const cfg = AXIS_CONFIG[axis];
+      if (cfg && cfg.presets) {
+        cfg.presets.forEach(p => {
+          const b = document.getElementById('btn' + axis + '_' + p.id);
+          if (b) {
+            b.classList.toggle('active', Math.abs(axisValues[axis] - p.val) < (cfg.step * 0.6));
+          }
+        });
+      }
+      buildSliceSurfaces();
+    }
+
+    function setAxisPos(axis, val) {
+      const slider = document.getElementById('slider' + axis);
+      if (slider) slider.value = val.toFixed(2);
+      updateAxisPos(axis, val);
+    }
+
+    // Backward-compatible helpers
+    function setSliceAxis(axis) {
+      setAxisCombo([axis]);
+    }
+
+    function setElevation(val) {
+      activeAxes.Z = true;
+      setAxisPos('Z', val);
+      syncAxisUI();
+    }
+
+    function setSlicePosition(val) {
+      const active = ['Z', 'X', 'Y'].find(a => activeAxes[a]) || 'Z';
+      setAxisPos(active, val);
+    }
+
+    function setParaViewPlanSlice() {
+      setAxisCombo(['Z']);
+      setAxisPos('Z', 1.50);
+      AXIS_CONFIG['Z'].cameraAlign();
+      toggleSidebarDrawer(false);
+    }
+
+    function updateSurfaceOpacity(val) {
+      currentSliceOpacity = parseFloat(val);
+      document.getElementById('opacityValue').innerText = Math.round(currentSliceOpacity * 100) + '%';
+      sliceGroup.children.forEach(mesh => {
+        mesh.material.transparent = currentSliceOpacity < 0.99;
+        mesh.material.opacity = currentSliceOpacity;
+        mesh.material.depthWrite = currentSliceOpacity > 0.8;
+        mesh.material.needsUpdate = true;
+      });
+      if (cfdPointsMesh) {
+        cfdPointsMesh.material.opacity = currentSliceOpacity;
+        cfdPointsMesh.material.needsUpdate = true;
+      }
+    }
+
+    function updatePalette() {
+      currentPalette = document.getElementById('paletteSelect').value;
+      buildSliceSurfaces();
+      updateLegendCanvas();
+    }
+
+    function toggleWalls() {
+      wallsMesh.visible = document.getElementById('chkWalls').checked;
+    }
+
+    function toggleWallEdges() {
+      wallLinesMesh.visible = document.getElementById('chkWallEdges').checked;
+    }
+
+    function toggleStreamlines() {
+      streamlineGroup.visible = document.getElementById('chkStreamlines').checked;
+    }
+
+    function toggleLabels() {
+      labelGroup.visible = document.getElementById('chkLabels').checked;
+    }
+
+    // RESPONSIVE SIDEBAR DRAWER TOGGLE
+    function toggleSidebarDrawer(show) {
+      const sidebar = document.getElementById('appSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      const btn = document.getElementById('btnMenuToggle');
+      if (sidebar && backdrop) {
+        const isOpen = sidebar.classList.contains('open');
+        const nextState = (show !== undefined) ? show : !isOpen;
+        sidebar.classList.toggle('open', nextState);
+        backdrop.classList.toggle('open', nextState);
+        if (btn) btn.innerText = nextState ? '✕ Close' : '☰ Controls';
+      }
+    }
+
+    function toggleProbeCard(show) {
+      const card = document.getElementById('probeCard');
+      if (card) {
+        if (show === undefined) card.classList.toggle('active-mobile');
+        else if (show) card.classList.add('active-mobile');
+        else card.classList.remove('active-mobile');
+      }
+    }
+
+    // SNAP TO PARAVIEW PLAN SLICE (0, 0, 1)
+    function setParaViewPlanSlice() {
+      setSliceAxis('Z');
+      setSlicePosition(1.50);
+      AXIS_CONFIG['Z'].cameraAlign();
+      toggleSidebarDrawer(false);
+    }
+
+    function setCameraView(preset) {
+      if (preset === 'top') {
+        camera.position.set(4.8, 3.1, 15);
+        camera.up.set(0, 1, 0);
+      } else if (preset === 'west') {
+        camera.position.set(-6, 3.1, 1.5);
+        camera.up.set(0, 0, 1);
+      } else if (preset === 'east') {
+        camera.position.set(16, 3.1, 1.5);
+        camera.up.set(0, 0, 1);
+      } else if (preset === 'south') {
+        camera.position.set(4.8, -9, 1.5);
+        camera.up.set(0, 0, 1);
+      } else { // iso
+        camera.position.set(15, -13, 12);
+        camera.up.set(0, 0, 1);
+      }
+      controls.target.set(4.8, 3.1, 1.5);
+      controls.update();
+      toggleSidebarDrawer(false);
+    }
+
+    function resetView() {
+      setCameraView('iso');
+    }
+
+    // PROBE FUNCTION
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function onMouseMove(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function onClickProbe(event) {
+      raycaster.setFromCamera(mouse, camera);
+      const targets = [];
+      sliceGroup.children.forEach(m => targets.push(m));
+      if (cfdPointsMesh) targets.push(cfdPointsMesh);
+      if (targets.length === 0) return;
+
+      const intersects = raycaster.intersectObjects(targets);
+      if (intersects.length > 0) {
+        const hit = intersects[0];
+        const pt = hit.point;
+        const hitAxis = (hit.object.userData && hit.object.userData.axis) ? hit.object.userData.axis : 'Z';
+        const hitSliceData = (hit.object.userData && hit.object.userData.sliceData) ? hit.object.userData.sliceData : getClosestNativeSlice(axisValues[hitAxis], hitAxis);
+        updateProbeInfo(pt.x, pt.y, pt.z, hitAxis, hitSliceData);
+        toggleProbeCard(true);
+      }
+    }
+
+    function onTouchProbe(event) {
+      if (event.changedTouches && event.changedTouches.length === 1) {
+        const touch = event.changedTouches[0];
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+        onClickProbe(touch);
+      }
+    }
+
+    function updateProbeInfo(x, y, z, hitAxis, hitSliceData) {
+      document.getElementById('probeCoord').innerText = `${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)} m`;
+      
+      let room = 'Exterior / Wall';
+      if (x >= 0.2 && x <= 4.0 && y >= 0.2 && y <= 2.8) room = 'Room 1 (Office A)';
+      else if (x >= 0.2 && x <= 4.0 && y >= 3.4 && y <= 6.0) room = 'Room 2 (Office B)';
+      else if (x >= 4.0 && x <= 5.6 && y >= 0.2 && y <= 6.0) room = 'Central Corridor';
+      else if (x >= 5.6 && x <= 9.4 && y >= 0.2 && y <= 6.0) room = 'Room 3 (Meeting Space)';
+
+      const axisLabel = hitAxis ? ` [${hitAxis}-Plane]` : '';
+      document.getElementById('probeRoom').innerText = room + axisLabel;
+
+      const sliceData = hitSliceData || getClosestNativeSlice(axisValues[hitAxis || 'Z'], hitAxis || 'Z');
+      if (!sliceData || !sliceData.points) return;
+      const pts = sliceData.points;
+      let closestIdx = 0;
+      let minDist = 1e9;
+      for (let i = 0; i < pts.length / 3; i++) {
+        const dx = pts[i*3] - x;
+        const dy = pts[i*3+1] - y;
+        const dz = pts[i*3+2] - z;
+        const dist = dx*dx + dy*dy + dz*dz;
+        if (dist < minDist) {
+          minDist = dist;
+          closestIdx = i;
+        }
+      }
+
+      const vel = sliceData.U_mag ? sliceData.U_mag[closestIdx] : 0;
+      const age = sliceData.age ? sliceData.age[closestIdx] : 0;
+      
+      document.getElementById('probeVel').innerText = (vel !== undefined ? vel.toFixed(3) : '-') + ' m/s';
+      document.getElementById('probeAge').innerText = (age !== undefined ? age.toFixed(1) : '-') + ' s';
+
+      let draft = 'Calm (< 0.2 m/s)';
+      if (vel > 0.8) draft = 'Draft Risk (> 0.8 m/s)';
+      else if (vel >= 0.2) draft = 'Pleasant Fresh Breeze';
+      document.getElementById('probeDraft').innerText = draft;
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('viewport-container');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

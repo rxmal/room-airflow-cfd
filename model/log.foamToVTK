@@ -1,0 +1,50 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  14
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 14-a4867fc914c1
+Exec   : foamToVTK -latestTime
+Date   : Oct 16 2026
+Time   : 12:41:33
+Host   : "tblr-lap-13"
+PID    : 111577
+I/O    : uncollated
+Case   : .
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 2000
+
+Time: 2000
+    volScalarFields            : age p nut k epsilon
+    volVectorFields            : U
+
+    Internal  : "./VTK/multiRoomBuilding_2000.vtk"
+    Original cells:35424 points:40701   Additional cells:0  additional points:0
+
+Combining patches:
+    patch 0 inlet_window1
+    patch 1 inlet_window2
+    patch 2 outlet_window1
+    patch 3 outlet_window2
+    patch 4 floor
+    patch 5 ceiling
+    patch 6 walls
+    Patch     : "./VTK/inlet_window1/inlet_window1_2000.vtk"
+    Patch     : "./VTK/inlet_window2/inlet_window2_2000.vtk"
+    Patch     : "./VTK/outlet_window1/outlet_window1_2000.vtk"
+    Patch     : "./VTK/outlet_window2/outlet_window2_2000.vtk"
+    Patch     : "./VTK/floor/floor_2000.vtk"
+    Patch     : "./VTK/ceiling/ceiling_2000.vtk"
+    Patch     : "./VTK/walls/walls_2000.vtk"
+    surfScalarFields  : phi
+End
+

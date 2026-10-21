@@ -1,0 +1,19 @@
+#!/bin/sh
+cd ${0%/*} || exit 1
+
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+echo "1. Generating 3D Multi-Room Building Mesh..."
+runApplication blockMesh
+
+echo "2. Running OpenFOAM solver..."
+runApplication foamRun
+
+echo "3. Calculating Mean Age of Air..."
+runApplication -s age foamPostProcess -solver $(getSolver) -latestTime -func "age(diffusion=true)"
+
+echo "4. Exporting solution to VTK for ParaView..."
+runApplication foamToVTK -latestTime
+
+touch multiRoomBuilding.foam
+echo "Done! You can open multiRoomBuilding.foam in ParaView."

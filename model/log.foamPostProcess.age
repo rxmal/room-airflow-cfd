@@ -1,0 +1,46 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  14
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 14-a4867fc914c1
+Exec   : foamPostProcess -solver incompressibleFluid -latestTime -func age(diffusion=true)
+Date   : Oct 16 2026
+Time   : 12:41:31
+Host   : "tblr-lap-13"
+PID    : 111566
+I/O    : uncollated
+Case   : .
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 2000
+
+
+Constructing functionObjects from system/functions
+    Selecting age with name age(diffusion=true)
+Time = 2000s
+
+Selecting solver incompressibleFluid
+
+Selecting viscosity model constant
+
+Selecting momentum transport model type RAS
+    Selecting RAS turbulence model kEpsilon
+DILUPBiCG:  Solving for age, Initial residual = 1, Final residual = 0.000307037, No Iterations 69
+DILUPBiCG:  Solving for age, Initial residual = 7.56522e-05, Final residual = 7.22104e-08, No Iterations 47
+DILUPBiCG:  Solving for age, Initial residual = 7.22098e-08, Final residual = 9.33045e-09, No Iterations 12
+Field age converged in 2 correctors
+
+Min/max age:0 81.5212
+    functionObjects::age age(diffusion=true) writing field: age
+
+End
+
